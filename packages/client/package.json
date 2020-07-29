@@ -8,14 +8,14 @@
     "Client",
     "Websocket"
   ],
-  "author": "Chris Visser - This Spider <2496739+chris-visser@users.noreply.github.com>",
+  "author": "Chris Visser - This Spider <chris@passionatepeople.io>",
   "homepage": "",
   "license": "ISC",
   "main": "dist/cjs.js",
   "module": "dist/esm-bundle.js",
   "types": "dist/esm-bundle.d.ts",
-  "unpkg": "dist/vue.global.js",
-  "jsdelivr": "dist/vue.global.js",
+  "unpkg": "dist/global.js",
+  "jsdelivr": "dist/global.js",
   "directories": {
     "src": "src"
   },
@@ -46,5 +46,5 @@
     "ts-node-dev": "^1.0.0-pre.56",
     "typescript": "^3.9.7"
   },
-  "gitHead": "ce5788b35170525a000fe8aecc66fe4cbcd66145"
+  "gitHead": "44466b0b48fd5a7bbb29890fc008cc6648857426"
 }
