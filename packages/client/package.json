@@ -10,7 +10,7 @@
   ],
   "author": "Chris Visser - This Spider <chris@passionatepeople.io>",
   "homepage": "",
-  "license": "ISC",
+  "license": "MIT",
   "main": "dist/cjs.js",
   "module": "dist/esm-bundle.js",
   "types": "dist/esm-bundle.d.ts",
