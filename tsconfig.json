@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.build.json",
+
+  "compilerOptions": {
+    "baseUrl": "./packages",
+    "esModuleInterop": true,
+    "paths": {
+      "@ddp/client": ["client/src"],
+      "@ddp/dummy": ["dummy/src"]
+    }
+  }
+}
