@@ -23,10 +23,10 @@
     "src"
   ],
   "scripts": {
-    "build": "yarn run clean && yarn run bundle",
+    "build": "npm run clean && npm run bundle",
     "clean": "rimraf -rf ./dist",
     "bundle": "rollup --config rollup.config.js",
-    "prepublishOnly": "yarn run build"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "ejson": "^2.2.0",
@@ -45,5 +45,6 @@
     "ts-node": "^8.10.2",
     "ts-node-dev": "^1.0.0-pre.56",
     "typescript": "^3.9.7"
-  }
+  },
+  "gitHead": "1c40df73b524f786fc1286e96c117b048b1f6d5d"
 }
