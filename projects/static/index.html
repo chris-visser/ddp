@@ -18,9 +18,7 @@
     (async () => {
       const client = await DDP.createClient(URL)
 
-      const items = []
-
-      client.on('articles.added', (payload) => items.push(payload))
+      client.on('articles.added', (payload) => storage.push(payload))
 
       await client.subscribe('articles').catch(console.log)
 
