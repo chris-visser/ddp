@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chris-visser/ddp"
+  },
   "scripts": {
     "dev": "nodemon --exec npm run babel-node -- ./index.js",
     "babel-node": "babel-node --presets=latest"
@@ -10,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "pubsub-ddp-client": "0.0.2"
+    "pubsub-ddp-client": "0.0.3"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
