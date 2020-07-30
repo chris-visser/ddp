@@ -5,38 +5,39 @@ import { terser } from 'rollup-plugin-terser'
 
 // const isProduction = process.env.NODE_ENV === 'production'
 
-export default {
+export default [{
   input: 'src/main.ts',
   output: [{
     file: 'dist/cjs.js',
     format: 'cjs'
   }, {
     file: 'dist/esm-bundle.js',
-    format: 'es'
-  }, {
+    format: 'es',
+  }],
+  external: ['ws'],
+  plugins: [
+    ts({ tsconfig: 'tsconfig.build.json' }),
+    nodeResolve(),
+    commonjs()
+  ]
+},{
+  input: 'src/main.ts',
+  output: [{
     file: 'dist/esm-bundle.min.js',
     format: 'es',
-    plugins: [terser()]
+    plugins: [terser()],
   }, {
     file: 'dist/global.min.js',
     format: 'iife',
-    plugins: [
-      nodeResolve({
-        browser: true
-      }),
-      terser(),
-    ],
-    name: 'DDPClient',
-    globals: {
-      ws: 'ws'
-    }
+    name: 'DDP',
   }],
-  external: ['ws'],
   plugins: [
     ts({
       tsconfig: 'tsconfig.build.json'
     }),
-    nodeResolve(),
+    nodeResolve({
+      browser: true
+    }),
     commonjs()
   ]
-}
+}]

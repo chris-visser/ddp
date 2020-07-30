@@ -2,13 +2,14 @@
   "name": "meteor-bff",
   "private": true,
   "scripts": {
-    "start": "meteor run",
+    "dev": "meteor run --exclude-archs web.browser.legacy,web.browser --port 3001",
     "test": "meteor test --once --driver-package meteortesting:mocha",
     "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
     "visualize": "meteor --production --extra-packages bundle-visualizer"
   },
   "dependencies": {
     "@babel/runtime": "^7.8.3",
+    "faker": "^4.1.0",
     "jquery": "^3.4.1",
     "meteor-node-stubs": "^1.0.0"
   },

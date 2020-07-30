@@ -4,32 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>DDP Static site demo</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/pubsub-ddp-client@0.0.4"></script>
-
-    <script>
-
-    const URL = 'ws://localhost:3000/websocket';
-
-    (async () => {
-      const client = new DDPClient(URL)
-
-      await client.connect()
-
-      const items = []
-
-      client.on('items.added', (payload) => items.push(payload))
-
-      await client.subscribe('items').catch(console.log)
-
-      console.log(items)
-    })()
-
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/pubsub-ddp-client@0.0.5"></script>
 
   </head>
   <body>
+    <script>
+    const URL = 'ws://localhost:3001/websocket';
+
+    const storage = []
+
+    (async () => {
+      const client = await DDP.createClient(URL)
+
+      const items = []
+
+      client.on('articles.added', (payload) => items.push(payload))
+
+      await client.subscribe('articles').catch(console.log)
+
+      console.log(storage)
+    })()
+
+    </script>
 
   </body>
 </html>
