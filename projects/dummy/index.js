@@ -1,6 +1,6 @@
-import DDPClient from '@ddp/client';
+import { DDPClient } from 'pubsub-ddp-client'
 
-const URL = 'ws://localhost:3001/websocket';
+const URL = 'ws://localhost:3000/websocket';
 
 (async () => {
   const client = new DDPClient(URL)
@@ -11,7 +11,7 @@ const URL = 'ws://localhost:3001/websocket';
 
   client.on('items.added', (payload) => items.push(payload))
 
-  await client.subscribe('items')
+  await client.subscribe('items').catch(console.log)
 
   console.log(items)
 })()

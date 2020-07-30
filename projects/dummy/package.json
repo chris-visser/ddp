@@ -1,0 +1,25 @@
+{
+  "name": "dummy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec npm run babel-node -- ./index.js",
+    "babel-node": "babel-node --presets=latest"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pubsub-ddp-client": "0.0.2"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-latest": "^6.24.1",
+    "nodemon": "^2.0.4"
+  },
+  "babel": {
+    "presets": [
+      "latest"
+    ]
+  }
+}
