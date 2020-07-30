@@ -20,7 +20,12 @@ export default {
   }, {
     file: 'dist/global.min.js',
     format: 'iife',
-    plugins: [terser()],
+    plugins: [
+      nodeResolve({
+        browser: true
+      }),
+      terser(),
+    ],
     name: 'DDPClient',
     globals: {
       ws: 'ws'

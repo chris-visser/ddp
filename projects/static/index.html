@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/pubsub-ddp-client@0.0.4"></script>
+
+    <script>
+
+    const URL = 'ws://localhost:3000/websocket';
+
+    (async () => {
+      const client = new DDPClient(URL)
+
+      await client.connect()
+
+      const items = []
+
+      client.on('items.added', (payload) => items.push(payload))
+
+      await client.subscribe('items').catch(console.log)
+
+      console.log(items)
+    })()
+
+    </script>
+
+  </head>
+  <body>
+
+  </body>
+</html>
