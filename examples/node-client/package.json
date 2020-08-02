@@ -3,6 +3,7 @@
   "version": "0.0.5",
   "description": "",
   "main": "index.js",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/chris-visser/ddp"

@@ -3,6 +3,7 @@
   "version": "0.0.5",
   "description": "Static HTML file that loads the DDP library",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "dev": "http-server ."
   },
