@@ -1,6 +1,6 @@
 {
   "name": "@ddp/client",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A promised based client to communicate with any DDP server",
   "repository": {
     "type": "git",
