@@ -1,7 +1,8 @@
 # @ddp/client
 
 > Do not use this library yet. Its work in progress. Feel free to test it and provide feedback :) 
-> The `publication`, `call` and `apply` methods have not yet been finished too. 
+> The `publication`, `call` and `apply` methods have not yet been finished too and the package 
+> has not yet been published to NPM, because the name will likely change.
 
 A modern isomorphic DDP client with optional Promise based API for easy pub/sub integration 
 on any client. 
