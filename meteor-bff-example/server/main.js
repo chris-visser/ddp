@@ -19,16 +19,16 @@ Meteor.publish('articles', (params) => {
   return Articles.find(selector)
 })
 
-
 Meteor.startup(() => {
+  Articles.remove({})
   Meteor.setTimeout(() => {
     if (!Articles.findOne()) {
       const docs = Array.from(Array(20).keys())
 
       docs.forEach(doc => (
         Articles.insert({
-          title: faker.lorem.sentence,
-          body: faker.lorem.sentences
+          title: faker.lorem.sentence(),
+          createdAt: new Date()
         })
       ))
 

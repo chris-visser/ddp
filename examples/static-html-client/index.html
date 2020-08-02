@@ -10,19 +10,30 @@
 
   </head>
   <body>
+    <div id="app"></div>
+
     <script>
     const URL = 'ws://localhost:3001/websocket';
 
-    const storage = []
-
     (async () => {
-      const client = await DDP.createClient(URL)
+      const storage = []
 
-      client.on('articles.added', (payload) => storage.push(payload))
+      const client = await DDP.createClient(URL)
+      window.client = client
+
+      client.on('articles.added', (payload) => {
+        console.log('added', payload)
+        storage.push(payload)
+      })
+
+      client.on('articles.removed', (payload) => {
+        console.log('removed', payload)
+      })
 
       await client.subscribe('articles').catch(console.log)
 
-      console.log(storage)
+
+      document.getElementById('app').innerHTML = `<pre>${JSON.stringify(storage, null, 2)}</pre>`
     })()
 
     </script>

@@ -99,23 +99,56 @@ export class Client extends EventEmitter {
     }
 
     connectSocket(): Promise<void> {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
 
             this.connection = new WebSocket(this.url, this.socketOptions)
 
             this.connection.onopen = () => resolve()
-            this.connection.onerror = this.logger.error
-            this.connection.onclose = () => {
-                if (!this.intendedDisconnect) {
-                    this.logger.warning('[DDP] websocket connection closed unexpectedly')
-                } else {
-                    this.logger.info('[DDP] websocket connection closed')
-                }
-
-                this.emit('disconnected', { intended: this.intendedDisconnect })
-            }
+            this.connection.onerror = reject()
+            this.connection.onclose = () => this.handleClose()
         })
     }
+
+    handleClose() {
+        if (!this.intendedDisconnect) {
+            this.logger.warning('[DDP] websocket connection closed unexpectedly')
+            this.autoReconnect()
+        } else {
+            this.logger.info('[DDP] websocket connection closed')
+        }
+
+        this.emit('disconnected', { intended: this.intendedDisconnect })
+    }
+
+    autoReconnectTimeout = null
+    autoReconnectTimer = 0
+    autoReconnectTimerIncrement = 1000
+
+    autoReconnect() {
+        this.autoReconnectTimeout = setTimeout(() => {
+            console.log('Trying to reconnect')
+            this.connect()
+                .catch(() => {
+                    const timer = this.autoReconnectTimerIncrement *= 2
+                    console.log(`Failed to auto reconnect. Trying again in ${timer}`)
+                    this.autoReconnectTimer = timer
+                    this.autoReconnect()
+                })
+                .then(() => {
+                    console.log('Auto reconnect successful!')
+                    this.autoReconnectTimer = 0
+                    this.autoReconnectTimerIncrement = 1000
+                })
+        }, this.autoReconnectTimer)
+    }
+
+    // autoreconnect() {
+    //     // Each subscription id, name and params is kept in memory
+    //     // On disconnect nothing happens to the items for that subscription
+    //     // On reconnect,
+    //
+    //     // this.connect()
+    // }
 
     /**
      * If sending fails, we queue up the messages until the connection has been established

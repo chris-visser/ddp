@@ -1,0 +1,26 @@
+{
+  "name": "node-client",
+  "version": "0.0.5",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chris-visser/ddp"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn -r tsconfig-paths/register ./index.ts"
+  },
+  "author": "Chris Visser - The Spider",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "ts-node-dev": "^1.0.0-pre.56",
+    "tsconfig-paths": "^3.9.0",
+    "typescript": "^3.9.7"
+  },
+  "babel": {
+    "presets": [
+      "latest"
+    ]
+  }
+}

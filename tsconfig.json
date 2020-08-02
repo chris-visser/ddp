@@ -5,8 +5,7 @@
     "baseUrl": "./packages",
     "esModuleInterop": true,
     "paths": {
-      "@ddp/client": ["client/src"],
-      "@ddp/dummy": ["dummy/src"]
+      "@ddp/client": ["client/src"]
     }
   }
 }

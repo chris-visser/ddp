@@ -1,0 +1,18 @@
+{
+  "name": "static-html-client",
+  "version": "0.0.5",
+  "description": "Static HTML file that loads the DDP library",
+  "main": "index.js",
+  "scripts": {
+    "dev": "http-server ."
+  },
+  "author": "Chris Visser",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^0.12.3"
+  },
+  "dependencies": {
+    "@ddp/client": "^0.0.5",
+    "ws": "^7.3.1"
+  }
+}

@@ -6,7 +6,7 @@ import { terser } from 'rollup-plugin-terser'
 // const isProduction = process.env.NODE_ENV === 'production'
 
 export default [{
-  input: 'src/main.ts',
+  input: 'src/index.ts',
   output: [{
     file: 'dist/cjs.js',
     format: 'cjs'
@@ -21,7 +21,7 @@ export default [{
     commonjs()
   ]
 },{
-  input: 'src/main.ts',
+  input: 'src/index.ts',
   output: [{
     file: 'dist/esm-bundle.min.js',
     format: 'es',
