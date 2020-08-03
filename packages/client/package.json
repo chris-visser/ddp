@@ -15,12 +15,11 @@
   "author": "Chris Visser - This Spider <chris@passionatepeople.io>",
   "homepage": "",
   "license": "MIT",
-  "main": "dist/cjs.js",
-  "module": "dist/esm-bundle.js",
-  "types": "dist/esm-bundle.d.ts",
-  "unpkg": "dist/global.js",
-  "jsdelivr": "dist/global.min.js",
-  "browser": "dist/esm-bundle.min.js",
+  "main": "dist/ddp-client.node.js",
+  "module": "dist/ddp-client.esm.js",
+  "unpkg": "dist/ddp-client.min.js",
+  "jsdelivr": "dist/ddp-client.min.js",
+  "browser": "dist/ddp-client.min.js",
   "directories": {
     "src": "src"
   },
@@ -28,9 +27,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run clean && yarn run bundle",
+    "build": "npm run clean && npm run build:browser && npm run build:node && npm run build:es && npm run build:global",
+    "build:browser": "rollup --config build/rollup.config.browser.js",
+    "build:node": "rollup --config build/rollup.config.node.js",
+    "build:es": "rollup --config build/rollup.config.es.js",
+    "build:global": "rollup --config build/rollup.config.global.js",
     "clean": "rimraf -rf ./dist",
-    "bundle": "rollup --config rollup.config.js",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>DDP Static site demo</title>
+
+    <script src="/ddp-client.min.js"></script>
+
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script>
+    const URL = 'ws://localhost:3001/websocket';
+
+    // (async () => {
+    //   const storage = []
+    //
+    //   const client = await DDP.createClient(URL)
+    //   window.client = client
+    //
+    //   client.on('articles.added', (payload) => {
+    //     console.log('added', payload)
+    //     storage.push(payload)
+    //   })
+    //
+    //   client.on('articles.removed', (payload) => {
+    //     console.log('removed', payload)
+    //   })
+    //
+    //   await client.subscribe('articles').catch(console.log)
+    //
+    //
+    //   document.getElementById('app').innerHTML = `<pre>${JSON.stringify(storage, null, 2)}</pre>`
+    // })()
+
+    </script>
+
+  </body>
+</html>

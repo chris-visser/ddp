@@ -1,0 +1,16 @@
+{
+  "name": "static-html",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "dev": "http-server ."
+  },
+  "author": "Chris Visser - The Spider",
+  "license": "ISC",
+  "dependencies": {
+    "http-server": "^0.12.3",
+    "pubsub-client-ddp": "^0.0.7"
+  }
+}

@@ -1,241 +1,221 @@
 import WebSocket from 'isomorphic-ws'
 import EventEmitter from 'eventemitter3'
 import EJSON from 'ejson'
-import { unique } from 'shorthash'
 
-import { defaultLogger, Logger } from './logger';
-import { ConnectionState } from './enums';
 import { DDP_CONNECT_MESSAGE } from './constants';
+import { ConnectionStatus, DDPMessage, EventName, RequestStatus } from './enums';
 
 // TODO Add fallback to automatically connect to older versions
 export class Client extends EventEmitter {
-    logger: Logger
     url: string
     socketOptions: WebSocket
 
-    connection = null
-    subscriptions = {}
-    messageQueue = []
-    intendedDisconnect = false
+    // On re-connect
+    autoReconnectTimeoutHandle = null
+    autoReconnectDelay = 500
+    autoReconnectIncrement = 1.6
+
+    // Initial connect
+    connectTimeout = 30000
+    connectTimeoutHandle = null
+
+    status: ConnectionStatus = ConnectionStatus.Disconnected
+
+    connection: WebSocket = null
+    isInitialConnect = true // On first connect we don't autoReconnect
+    intendedDisconnect = false // We only autoReconnect if the disconnect was not intended
+
+    messageQueue: Record<string, unknown>[] = [] // Queue up any messages sent before the connection was established
 
     ddpParams = DDP_CONNECT_MESSAGE
 
-    constructor(url: string, socketOptions?: WebSocket, logger?: Logger) {
+    constructor(url: string, socketOptions?: WebSocket) {
         super()
-        this.logger = logger || defaultLogger
         this.url = url
         this.socketOptions = socketOptions
+
+        this.connect()
     }
 
-    async connect(): Promise<string> {
-        // Whenever intendedDisconnect is set to false, we need to assume that the client did not want to
-        // break the connection and therefore we should try to reconnect
+    public connect = (): void => {
         this.intendedDisconnect = false
-        await this.connectSocket()
 
-        this.send(this.ddpParams)
+        this.status = ConnectionStatus.Connecting
+
+        this.connection = new WebSocket(this.url, this.socketOptions)
+
+        this.connection.onopen = this.handleSocketOpen
+        this.connection.onerror = (event) => {
+            const { type, message, error } = event
+
+            this.emit(EventName.Error, {
+                type,
+                message,
+                error,
+            })
+
+        }
+        this.connection.onclose = this.handleSocketClosed
 
         this.listen()
+    }
 
-        return new Promise((resolve, reject) => {
-            this.once('connected', ({ serverId }) => {
-                this.logger.info('[DDP] connected')
-                this.messageQueue.forEach(this.send)
-                resolve(serverId)
-            })
-            this.once('invalid-ddp-negotiation', (payload) => {
-                const feedback = {
-                    given: this.ddpParams,
-                    expected: payload,
-                }
-                this.logger.error(`[DDP] Error: invalid version negotiation. Expected version ${payload.version}, but version ${this.ddpParams.version} was given.`)
-                reject({
-                    reason: 'Invalid version negotiation',
-                    feedback,
+    private handleSocketOpen = () => {
+        this.isInitialConnect = false
+        this.status = ConnectionStatus.Connected
+        this.autoReconnectDelay = 500
+        clearTimeout(this.autoReconnectTimeoutHandle)
+
+        // Since the DDP connect must be the first message, lets send it before we emit
+        // the 'connected' event. We don't have to wait though
+        // (ref: https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md#procedure)
+        this.send(this.ddpParams)
+        // Send all messages that were waiting for the connection to come up
+        this.messageQueue.forEach(this.send)
+        // Tell the outside world that we're idling
+        this.emit(EventName.Connected)
+    }
+
+    private handleSocketClosed = (event: CloseEvent) => {
+        const { type, wasClean, reason, code } = event
+
+        // When the socket triggers onclose, but as a result of a client that tries to (re)connect,
+        // it obviously means that the client is not connected so we should not throw a disconnected event
+        if(this.status !== ConnectionStatus.Connecting) {
+            this.emit(EventName.Disconnected, { type, wasClean, reason, code, url: this.url })
+        }
+
+        // Initial connection attempts have a timeout of n seconds
+        if(this.isInitialConnect && !this.connectTimeoutHandle) {
+            this.connectTimeoutHandle = setTimeout(() => {
+                this.emit(EventName.Error, {
+                    type: 'timeout-exceeded',
+                    message: `Stopped retrying to connect after ${Math.round(this.connectTimeout / 1000)} seconds`
                 })
-            })
+                this.connectTimeoutHandle = null
+                clearTimeout(this.autoReconnectTimeoutHandle)
+            }, this.connectTimeout)
+        }
+
+        if (!this.intendedDisconnect) {
+            this.autoReconnectDelay = this.autoReconnectDelay * this.autoReconnectIncrement
+            this.autoReconnectTimeoutHandle = setTimeout(() => {
+                this.emit(this.isInitialConnect ? EventName.RetryConnect: EventName.Reconnecting)
+                this.connect()
+            }, this.autoReconnectDelay)
+        }
+    }
+
+    /**
+     * Resolves when the websocket connection has been established
+     * Rejects when the connection was refused on first try
+     * Will not attempt to auto reconnect on first try. This is by design,
+     * to allow servers to return failure feedback during SSR
+     */
+    public connected = (): Promise<Client> => {
+        if (this.connection.readyState === WebSocket.OPEN) {
+            return Promise.resolve(this)
+        }
+        return new Promise((resolve, reject) => {
+            const resolveFunc = () => {
+                resolve(this)
+                this.removeListener(EventName.Refused, rejectFunc)
+            }
+            const rejectFunc = (event) => {
+                reject(event)
+                this.removeListener(EventName.Connected, resolveFunc)
+            }
+
+            this.once(EventName.Connected, resolveFunc)
+            this.once(EventName.Refused, rejectFunc)
         })
     }
 
-    disconnect(): void {
+    /**
+     * Disconnect if as soon as 'possible'
+     */
+    public disconnect(): void {
         this.intendedDisconnect = true
-        this.logger.info('[DDP] closing websocket connection')
-
-        // TODO listen for close event and resolve the disconnect method as a Promise
-        // Because connection.close can fail
+        if ([WebSocket.CLOSED, WebSocket.CLOSING].includes(this.connection.readyState)) {
+            return
+        }
+        if (this.connection.readyState === WebSocket.CONNECTING) {
+            // Guess we'll have to wait until we are connected and then close asap
+            this.once(EventName.Connected, () => this.connection.close(1000, 'intentional'))
+            return
+        }
         this.connection.close(1000, 'intentional')
     }
 
-    listen(): void {
-        this.connection.onmessage = ({ data }) => {
-            const { msg, server_id, ...payload } = EJSON.parse(data)
-            if (server_id) {
-                this.emit('connected', { serverId: server_id })
-            }
-            if (msg === 'failed') {
-                return this.emit('invalid-ddp-negotiation', payload)
-            }
-            if (msg === 'ping') {
-                return this.send({ msg: 'pong' })
-            }
-            if (msg === 'ready') {
-                const { subs } = payload
-                subs.forEach(id => this.emit(`ready.${id}`, payload))
-            }
-            if (msg === 'nosub') {
-                const { id } = payload
-                this.emit(`nosub.${id}`, payload.error)
-            }
-            if (msg === 'close') {
-                this.logger.info('CLOSE')
-            }
-            if (['added', 'removed', 'updated'].includes(msg)) {
-                this.emit(`${payload.collection}.${msg}`, {
-                    id: payload.id,
-                    ...payload.fields,
-                })
-            }
-        }
-    }
-
-    connectSocket(): Promise<void> {
-        return new Promise((resolve, reject) => {
-
-            this.connection = new WebSocket(this.url, this.socketOptions)
-
-            this.connection.onopen = () => resolve()
-            this.connection.onerror = reject()
-            this.connection.onclose = () => this.handleClose()
-        })
-    }
-
-    handleClose() {
-        if (!this.intendedDisconnect) {
-            this.logger.warning('[DDP] websocket connection closed unexpectedly')
-            this.autoReconnect()
-        } else {
-            this.logger.info('[DDP] websocket connection closed')
-        }
-
-        this.emit('disconnected', { intended: this.intendedDisconnect })
-    }
-
-    autoReconnectTimeout = null
-    autoReconnectTimer = 0
-    autoReconnectTimerIncrement = 1000
-
-    autoReconnect() {
-        this.autoReconnectTimeout = setTimeout(() => {
-            console.log('Trying to reconnect')
-            this.connect()
-                .catch(() => {
-                    const timer = this.autoReconnectTimerIncrement *= 2
-                    console.log(`Failed to auto reconnect. Trying again in ${timer}`)
-                    this.autoReconnectTimer = timer
-                    this.autoReconnect()
-                })
-                .then(() => {
-                    console.log('Auto reconnect successful!')
-                    this.autoReconnectTimer = 0
-                    this.autoReconnectTimerIncrement = 1000
-                })
-        }, this.autoReconnectTimer)
-    }
-
-    // autoreconnect() {
-    //     // Each subscription id, name and params is kept in memory
-    //     // On disconnect nothing happens to the items for that subscription
-    //     // On reconnect,
-    //
-    //     // this.connect()
-    // }
-
     /**
+     * A promised based http-like request via the websocket
      * If sending fails, we queue up the messages until the connection has been established
      * then try to send the messages again
      */
-    send(message): void {
-        if (this.connection.readyState === ConnectionState.Connecting) {
+    request<Result>(message, namespace: EventName): Promise<Result> {
+
+        return new Promise((resolve, reject) => {
+            this.connection.send(EJSON.stringify(message))
+
+            this.once(namespace, (payload: Result, { status }) => {
+                if (status === RequestStatus.Success) {
+                    resolve(payload)
+                } else {
+                    reject(payload)
+                }
+            })
+        })
+    }
+
+    /**
+     * Sends messages to the DDP server if the connection is open
+     * If not, it will queue up the messages which will then be sent as
+     * soon as the connection is ready
+     * @param message
+     */
+    public send = (message: Record<string, unknown>): void => {
+        if (this.connection.readyState !== WebSocket.OPEN) {
             this.messageQueue.push(message)
-        }
-        if (this.connection.readyState === ConnectionState.Open) {
+        } else {
             this.connection.send(EJSON.stringify(message))
         }
     }
 
-    /**
-     * Subscribes to a publication
-     * @param name - Name of the publication
-     * @param params - Either an array or an object with parameters to send to the publication endpoint
-     * @returns a publication id that allows unsubscribe(id)
-     */
-    subscribe(name, params = []): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const sanitizedParams = Array.isArray(params) ? params : [params]
-            const hash = EJSON.stringify({
-                name,
-                params,
-            })
-            const id = unique(hash)
-
-            const sub = this.subscriptions[id]
-
-            if (sub) {
-                this.subscriptions[id] = {
-                    ...sub,
-                    count: sub.count + 1,
-                }
-            } else {
-                this.subscriptions[id] = {
-                    count: 1,
-                    status: 'pending',
-                }
+    private listen(): void {
+        this.connection.onmessage = ({ data }) => {
+            const { msg, server_id, ...payload } = EJSON.parse(data)
+            if (!msg) {
+                return
             }
-
-            // Immediately resolve, because other subscription with same params was already ready.
-            if (this.subscriptions[id].count > 1 && this.subscriptions[id].status === 'ready') {
-                return resolve(id)
+            if (msg === DDPMessage.Failed) {
+                this.emit(EventName.Negotiation, payload, { status: RequestStatus.Error })
+            } else if (server_id) {
+                this.emit(EventName.Negotiation, payload, { status: RequestStatus.Success })
             }
-
-            this.once(`ready.${id}`, () => resolve(id))
-            this.once(`nosub.${id}`, reject)
-
-            if (!sub) { // actual subscription if first sub
-                this.send({
-                    msg: 'sub',
-                    id,
-                    name,
-                    params: sanitizedParams,
-                })
+            if (msg === DDPMessage.Ping) {
+                this.send({ msg: DDPMessage.Pong })
             }
-        })
-    }
-
-    // TODO return a promise that waits until the unsubscription has finished
-    unsubscribe(id): void {
-
-        // Retrieve the subscription info
-        const sub = this.subscriptions[id]
-
-        if (!sub) {
-            return
-        }
-
-        // If more of the same subscriptions are active, we don't want to unsubscribe from the server
-        // just decrement
-        if (sub.count > 1) {
-            return this.subscriptions[id] = {
-                ...sub,
-                count: sub.count - 1,
+            if (msg === DDPMessage.Error) {
+                this.emit(EventName.Error, payload)
             }
         }
-
-        // In case there was just one subscription, remove the ref and send the unsub to the server
-        delete this.subscriptions[id]
-
-        this.send({
-            msg: 'unsub',
-            id,
-        })
     }
+
+    // autoReconnect() {
+    //     this.autoReconnectTimeout = setTimeout(() => {
+    //         console.log('Trying to reconnect')
+    //         this.connect()
+    //             .catch(() => {
+    //                 const timer = this.autoReconnectTimerIncrement *= 2
+    //                 console.log(`Failed to auto reconnect. Trying again in ${timer}`)
+    //                 this.autoReconnectTimer = timer
+    //                 this.autoReconnect()
+    //             })
+    //             .then(() => {
+    //                 console.log('Auto reconnect successful!')
+    //                 this.autoReconnectTimer = 0
+    //                 this.autoReconnectTimerIncrement = 1000
+    //             })
+    //     }, this.autoReconnectTimer)
+    // }
 }

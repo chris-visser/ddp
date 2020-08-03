@@ -1,29 +1,28 @@
-import { Client } from '../../packages/client/src'
-
+import DDP from 'pubsub-client-ddp';
 
 const URL = 'ws://localhost:3001/websocket';
 
 (async () => {
 
     console.log('Starting app')
-    const DDP = new Client(URL)
+    const Client = DDP.createClient(URL)
 
-    DDP.on('error', console.error)
-    DDP.on('disconnected', () => console.log('DISCONNECTED!'))
-    DDP.on('reconnecting', () => console.log('RECONNECTING!'))
-    DDP.on('retry', () => console.log('RETRY!'))
-    DDP.on('connected', () => console.log('CONNECTED!'))
+    Client.on('error', console.error)
+    Client.on('disconnected', () => console.log('DISCONNECTED!'))
+    Client.on('reconnecting', () => console.log('RECONNECTING!'))
+    Client.on('retry', () => console.log('RETRY!'))
+    Client.on('connected', () => console.log('CONNECTED!'))
 
     await new Promise(resolve => setTimeout(resolve, 2000))
 
     // Optional connected promise, will resolve instantly if already connected
     // Will catch if initial connection fails
-    // await DDP.connected()
+    // await Client.connected()
     //     .then(() => console.log('Initial connect success!'))
     //     .catch((error) => console.log('Initial connect error!', error))
-    // DDP.disconnect()
+    // Client.disconnect()
 
-    // DDP.connected().then(() => {
+    // Client.connected().then(() => {
     //     console.log(DDP.connection.readyState)
     // })
 

@@ -9,8 +9,8 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
-    "@ddp/client": "^0.0.5",
     "nuxt": "^2.14.0",
+    "pubsub-client-ddp": "^0.0.7",
     "ws": "^7.3.1"
   },
   "devDependencies": {
